@@ -241,6 +241,8 @@ GITHUB_TOKEN=ghp_xxx ./gradlew publish
 - [`docs/java/09-scaffolding-quarkus-archetypes-y-codestarts.md`](../docs/java/09-scaffolding-quarkus-archetypes-y-codestarts.md) — estrategia de scaffolding.
 - [`docs/java/06-semantic-versioning-en-java.md`](../docs/java/06-semantic-versioning-en-java.md) — semver, release-please, FP registry.
 
-## Licencia
+## License
 
-Apache License 2.0.
+Eclipse Public License 2.0 — see [LICENSE](LICENSE).
+
+Copyright © 2026 Angel Hincho.
