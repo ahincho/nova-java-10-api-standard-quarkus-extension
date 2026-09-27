@@ -13,7 +13,6 @@ jobs:
   release-please:
     uses: ahincho/nova-shared-02-pipelines/.github/workflows/reusable-release-please.yml@main
     with:
-      release-type: java
       path: .
       config-file: .release-please-config.json
       manifest-file: .release-please-manifest.json
