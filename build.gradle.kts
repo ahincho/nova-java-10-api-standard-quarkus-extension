@@ -109,6 +109,36 @@ checkstyle {
     configFile = rootProject.file("config/checkstyle/checkstyle.xml")
 }
 
+// checkstyleMain lee build/resources/main, donde jandex escribe META-INF/jandex.idx.
+// Gradle 9 rechaza esa lectura si la dependencia entre tareas no está declarada.
+tasks.named("checkstyleMain") {
+    dependsOn(tasks.named("jandex"))
+}
+
+// Versiones parcheadas de dependencias que el OWASP gate marca con CVSS >= 7. Las cuatro
+// llegan por la herramienta checkstyle; son las mismas que usan los starters de Spring Boot.
+// Verificadas contra la GitHub Advisory Database el 2026-09-27.
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.apache.httpcomponents" && requested.name.startsWith("httpcore")) {
+            useVersion("4.4.16")
+            because("CVE-2026-54428, CVE-2026-54399 require httpcore 4.4.16+")
+        }
+        if (requested.group == "org.apache.httpcomponents.core5" && requested.name.startsWith("httpcore5")) {
+            useVersion("5.4.3")
+            because("CVE-2026-54399 requires httpcore5 5.4.3+")
+        }
+        if (requested.group == "commons-beanutils" && requested.name == "commons-beanutils") {
+            useVersion("1.11.0")
+            because("CVE-2025-48734 requires commons-beanutils 1.11.0+")
+        }
+        if (requested.group == "org.codehaus.plexus" && requested.name == "plexus-utils") {
+            useVersion("3.6.1")
+            because("CVE-2025-67030 requires plexus-utils 3.6.1+")
+        }
+    }
+}
+
 dependencyCheck {
     // CRITICO: reusable-owasp-check.yml descarga un mirror NVD pre-construido
     // (~119MB) desde ahincho/nova-shared-02-pipelines (releases/tag/nvd-mirror), reconstruido
