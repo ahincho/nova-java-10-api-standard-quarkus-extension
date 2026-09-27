@@ -123,3 +123,14 @@ jobs:
           # publishing only metadata (no actual JAR/POM uploads) while reporting
           # BUILD SUCCESSFUL. See doc 07 §Causa raiz del publish fantasma.
           NOVA_PACKAGES_READ_TOKEN: ${{ secrets.NOVA_PACKAGES_READ_TOKEN || secrets.GITHUB_TOKEN }}
+
+      # Un publish en verde no prueba que el artefacto se pueda descargar: en julio esta
+      # misma extensión se publicó cinco veces sin nada descargable detrás. ADR-039, regla 6.
+      - name: Verify the publication can be downloaded
+        if: steps.detect.outputs.should_publish == 'true'
+        uses: ahincho/nova-shared-02-pipelines/.github/actions/nova-verify-publication@main
+        with:
+          group-id: pe.edu.nova.java.starters
+          artifact-ids: nova-api-standard-quarkus-extension
+          version: ${{ steps.detect.outputs.tag }}
+          token: ${{ github.token }}
