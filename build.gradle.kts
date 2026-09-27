@@ -3,6 +3,12 @@ import org.gradle.api.publish.maven.MavenPublication
 plugins {
     id("java-library")
     id("maven-publish")
+    id("signing")
+    // reusable-build-gradle.yml corre `./gradlew checkstyleMain`.
+    id("checkstyle")
+    // reusable-sbom.yml genera el SBOM con cyclonedxBom; sin el plugin cae a un
+    // fallback que falla al escribir build/reports/bom.json.
+    id("org.cyclonedx.bom") version "3.2.4"
     // Genera META-INF/jandex.idx en el JAR para que Quarkus descubra
     // @ServerExceptionMapper y @Singleton en apps consumidoras sin necesidad
     // de extension processor ni @BuildStep. Plugin compatible con Gradle 9.x.
@@ -54,17 +60,19 @@ repositories {
 }
 
 val junitVersion = "6.0.0"
+// Una sola fuente para la versión de Quarkus: gradle.properties.
+val quarkusVersion = findProperty("quarkusPlatformVersion") as String
 
 dependencies {
     // Quarkus REST (JAX-RS reactivo) - necesario para @Path, @Provider, @ServerExceptionMapper
-    implementation("io.quarkus:quarkus-rest:3.33.2.1")
+    implementation("io.quarkus:quarkus-rest:$quarkusVersion")
     // Quarkus ARC (CDI) - necesario para @ApplicationScoped, @Singleton, @Inject
-    implementation("io.quarkus:quarkus-arc:3.33.2.1")
+    implementation("io.quarkus:quarkus-arc:$quarkusVersion")
     // Quarkus Jackson - aporta jackson-databind + la API ObjectMapperCustomizer.
-    implementation("io.quarkus:quarkus-jackson:3.33.2.1")
+    implementation("io.quarkus:quarkus-jackson:$quarkusVersion")
 
     // Libreria pura Nova - los tipos ApiResponse, ApiError, PageInfo, etc.
-    api("pe.edu.nova.java.libs:nova-api-standard:1.0.0")
+    api("pe.edu.nova.java.libs:nova-api-standard:1.0.2")
 
     testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
     testImplementation("org.junit.platform:junit-platform-launcher:$junitVersion")
@@ -90,6 +98,47 @@ tasks.test {
     testLogging {
         events("passed", "skipped", "failed")
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+}
+
+checkstyle {
+    // Misma config que el resto de repos Nova (ver config/checkstyle/checkstyle.xml).
+    // Solo lint del main sourceSet; los tests usan wildcards legitimos (Assertions.*,
+    // jqwik.*) que AvoidStarImport marcaria como error.
+    sourceSets = listOf(project.sourceSets.main.get())
+    configFile = rootProject.file("config/checkstyle/checkstyle.xml")
+}
+
+// checkstyleMain y javadoc leen build/resources/main, donde jandex escribe
+// META-INF/jandex.idx. Gradle 9 rechaza esa lectura si la dependencia entre tareas
+// no está declarada. Son las dos tareas que reusable-build-gradle.yml corre aparte.
+listOf("checkstyleMain", "javadoc").forEach { name ->
+    tasks.named(name) {
+        dependsOn(tasks.named("jandex"))
+    }
+}
+
+// Versiones parcheadas de dependencias que el OWASP gate marca con CVSS >= 7. Las cuatro
+// llegan por la herramienta checkstyle; son las mismas que usan los starters de Spring Boot.
+// Verificadas contra la GitHub Advisory Database el 2026-09-27.
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.apache.httpcomponents" && requested.name.startsWith("httpcore")) {
+            useVersion("4.4.16")
+            because("CVE-2026-54428, CVE-2026-54399 require httpcore 4.4.16+")
+        }
+        if (requested.group == "org.apache.httpcomponents.core5" && requested.name.startsWith("httpcore5")) {
+            useVersion("5.4.3")
+            because("CVE-2026-54399 requires httpcore5 5.4.3+")
+        }
+        if (requested.group == "commons-beanutils" && requested.name == "commons-beanutils") {
+            useVersion("1.11.0")
+            because("CVE-2025-48734 requires commons-beanutils 1.11.0+")
+        }
+        if (requested.group == "org.codehaus.plexus" && requested.name == "plexus-utils") {
+            useVersion("3.6.1")
+            because("CVE-2025-67030 requires plexus-utils 3.6.1+")
+        }
     }
 }
 
@@ -127,5 +176,16 @@ publishing {
                 password = System.getenv("GITHUB_TOKEN")
             }
         }
+    }
+}
+
+signing {
+    val gpgKeyId: String? = System.getenv("GPG_SIGNING_KEY_ID")
+    val gpgKey: String? = System.getenv("GPG_SIGNING_KEY")
+    val gpgPassword: String? = System.getenv("GPG_SIGNING_PASSWORD")
+
+    if (gpgKeyId != null && gpgKey != null) {
+        useInMemoryPgpKeys(gpgKeyId, gpgKey, gpgPassword ?: "")
+        sign(publishing.publications)
     }
 }
