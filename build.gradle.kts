@@ -109,10 +109,13 @@ checkstyle {
     configFile = rootProject.file("config/checkstyle/checkstyle.xml")
 }
 
-// checkstyleMain lee build/resources/main, donde jandex escribe META-INF/jandex.idx.
-// Gradle 9 rechaza esa lectura si la dependencia entre tareas no está declarada.
-tasks.named("checkstyleMain") {
-    dependsOn(tasks.named("jandex"))
+// checkstyleMain y javadoc leen build/resources/main, donde jandex escribe
+// META-INF/jandex.idx. Gradle 9 rechaza esa lectura si la dependencia entre tareas
+// no está declarada. Son las dos tareas que reusable-build-gradle.yml corre aparte.
+listOf("checkstyleMain", "javadoc").forEach { name ->
+    tasks.named(name) {
+        dependsOn(tasks.named("jandex"))
+    }
 }
 
 // Versiones parcheadas de dependencias que el OWASP gate marca con CVSS >= 7. Las cuatro
