@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   release-please:
-    uses: ahincho/nova-devops/.github/workflows/reusable-release-please.yml@main
+    uses: ahincho/nova-shared-02-pipelines/.github/workflows/reusable-release-please.yml@main
     with:
       release-type: java
       path: .

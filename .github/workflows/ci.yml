@@ -15,12 +15,12 @@ on:
 jobs:
   build:
     if: github.event_name == 'pull_request'
-    uses: ahincho/nova-devops/.github/workflows/reusable-build-gradle.yml@main
+    uses: ahincho/nova-shared-02-pipelines/.github/workflows/reusable-build-gradle.yml@main
     secrets: inherit
 
   sonar:
     if: github.event_name == 'pull_request'
-    uses: ahincho/nova-devops/.github/workflows/reusable-sonarcloud-gradle.yml@main
+    uses: ahincho/nova-shared-02-pipelines/.github/workflows/reusable-sonarcloud-gradle.yml@main
     with:
       sonar-org: ahincho
       sonar-project-key: ahincho_nova-api-standard-quarkus-extension
@@ -28,21 +28,21 @@ jobs:
 
   matrix:
     if: github.event_name == 'pull_request'
-    uses: ahincho/nova-devops/.github/workflows/reusable-build-matrix.yml@main
+    uses: ahincho/nova-shared-02-pipelines/.github/workflows/reusable-build-matrix.yml@main
     with:
       build-tool: gradle
     secrets: inherit
 
   owasp:
     if: github.event_name == 'pull_request'
-    uses: ahincho/nova-devops/.github/workflows/reusable-owasp-check.yml@main
+    uses: ahincho/nova-shared-02-pipelines/.github/workflows/reusable-owasp-check.yml@main
     with:
       build-tool: gradle
     secrets: inherit
 
   sbom:
     if: github.event_name == 'pull_request'
-    uses: ahincho/nova-devops/.github/workflows/reusable-sbom.yml@main
+    uses: ahincho/nova-shared-02-pipelines/.github/workflows/reusable-sbom.yml@main
     with:
       build-tool: gradle
     permissions:

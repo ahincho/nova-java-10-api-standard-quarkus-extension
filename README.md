@@ -1,7 +1,7 @@
 # nova-quarkus-api-ext
 
 > Quarkus extension (coloquial, sin `@BuildStep`) que bridgea
-> [`nova-api-standard`](https://github.com/ahincho/nova-java-api-standard) —
+> [`nova-api-standard`](https://github.com/ahincho/nova-java-01-api-standard) —
 > libreria pura framework-agnostic — con el mundo Quarkus
 > (`quarkus-rest` + `quarkus-arc`).
 
@@ -30,7 +30,7 @@ requerir `META-INF/services/*` ni `@BuildStep`.
 | Java | `25` |
 | GroupId | `pe.edu.nova.java.starters` |
 | ArtifactId | `nova-quarkus-api-ext` |
-| Registry | GitHub Packages (`maven.pkg.github.com/ahincho/nova-java-api-standard-quarkus-extension`) |
+| Registry | GitHub Packages (`maven.pkg.github.com/ahincho/nova-java-10-api-standard-quarkus-extension`) |
 | Framework | Quarkus (alternativa a Spring Boot) |
 
 > **Nota sobre naming:** el repo de GitHub se llama

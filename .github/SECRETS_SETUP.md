@@ -4,7 +4,7 @@ Este repositorio usa los siguientes secrets en GitHub Actions. **Ninguno es comm
 
 ## Acceso a la configuracion
 
-`https://github.com/ahincho/nova-java-api-standard-quarkus-extension/settings/secrets/actions`
+`https://github.com/ahincho/nova-java-10-api-standard-quarkus-extension/settings/secrets/actions`
 
 Dos scopes:
 
@@ -41,7 +41,7 @@ Dos scopes:
 
 **Como configurarlo en el repo:**
 
-1. Ir a `https://github.com/ahincho/nova-java-api-standard-quarkus-extension/settings/secrets/actions/new`
+1. Ir a `https://github.com/ahincho/nova-java-10-api-standard-quarkus-extension/settings/secrets/actions/new`
 2. **Name:** `NOVA_RELEASE_PAT`
 3. **Secret:** pegar el token copiado
 4. Click **Add secret**.
@@ -80,7 +80,7 @@ Pero por seguridad es preferible tener un token de read-only aparte.
 
 ## Variables (no secrets)
 
-`https://github.com/ahincho/nova-java-api-standard-quarkus-extension/settings/variables/actions`
+`https://github.com/ahincho/nova-java-10-api-standard-quarkus-extension/settings/variables/actions`
 
 ### `NOVA_PACKAGE_VISIBILITY` (OPTIONAL)
 

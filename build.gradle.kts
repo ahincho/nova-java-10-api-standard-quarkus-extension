@@ -41,7 +41,7 @@ repositories {
     // Fallback automatico a GITHUB_TOKEN si NOVA_PACKAGES_READ_TOKEN no esta.
     maven {
         name = "GitHubPackages-Nova-ApiStandard"
-        url = uri("https://maven.pkg.github.com/ahincho/nova-java-api-standard")
+        url = uri("https://maven.pkg.github.com/ahincho/nova-java-01-api-standard")
         val token = System.getenv("NOVA_PACKAGES_READ_TOKEN")
             ?: System.getenv("GITHUB_TOKEN")
         if (!token.isNullOrBlank()) {
@@ -95,7 +95,7 @@ tasks.test {
 
 dependencyCheck {
     // CRITICO: reusable-owasp-check.yml descarga un mirror NVD pre-construido
-    // (~119MB) desde ahincho/nova-devops (releases/tag/nvd-mirror), reconstruido
+    // (~119MB) desde ahincho/nova-shared-02-pipelines (releases/tag/nvd-mirror), reconstruido
     // diario por nvd-mirror-update.yml. Con autoUpdate=true (default), el plugin
     // IGNORA ese mirror y dispara un full sync contra NVD (366k records), que
     // tarda 5-15 min CON key y 18+ min SIN key (rate-limited HTTP 429). El
@@ -121,7 +121,7 @@ publishing {
     repositories {
         maven {
             name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/ahincho/nova-java-api-standard-quarkus-extension")
+            url = uri("https://maven.pkg.github.com/ahincho/nova-java-10-api-standard-quarkus-extension")
             credentials {
                 username = System.getenv("GITHUB_ACTOR")
                 password = System.getenv("GITHUB_TOKEN")
