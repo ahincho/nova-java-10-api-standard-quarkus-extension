@@ -1,9 +1,9 @@
 {
-  "last-release-sha": "0000000000000000000000000000000000000000",
+  "last-release-sha": "276a7d574e0df1c1059dc883fb84ffb7bed93889",
   "packages": {
     ".": {
-      "component": "nova-quarkus-api-ext",
-      "package-name": "pe.edu.nova.java.starters:nova-quarkus-api-ext",
+      "component": "nova-api-standard-quarkus-extension",
+      "package-name": "pe.edu.nova.java.starters:nova-api-standard-quarkus-extension",
       "release-type": "java",
       "include-component-in-tag": false,
       "skip-snapshot": true,

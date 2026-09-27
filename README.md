@@ -1,4 +1,4 @@
-# nova-quarkus-api-ext
+# nova-api-standard-quarkus-extension
 
 > Quarkus extension (coloquial, sin `@BuildStep`) que bridgea
 > [`nova-api-standard`](https://github.com/ahincho/nova-java-01-api-standard) —
@@ -25,28 +25,25 @@ requerir `META-INF/services/*` ni `@BuildStep`.
 
 | Campo | Valor |
 |---|---|
-| Version | `1.0.0` |
+| Version | `2.0.1` |
 | Quarkus | `3.33.3.3` LTS (pin Nova workspace) |
 | Java | `25` |
 | GroupId | `pe.edu.nova.java.starters` |
-| ArtifactId | `nova-quarkus-api-ext` |
+| ArtifactId | `nova-api-standard-quarkus-extension` |
 | Registry | GitHub Packages (`maven.pkg.github.com/ahincho/nova-java-10-api-standard-quarkus-extension`) |
 | Framework | Quarkus (alternativa a Spring Boot) |
 
-> **Nota sobre naming:** el repo de GitHub se llama
-> `nova-java-api-standard-quarkus-extension` (con prefijo `nova-java-` por
-> consistencia organizacional) pero el **artifactId de Maven es
-> `nova-quarkus-api-ext`** (corto, siguiendo la convencion Nova: el
-> `groupId` ya incluye `java` y `starters` asi que el artifactId se enfoca
-> en el rol). Es paralelo a `nova-api-standard-starter` para el starter
-> Spring Boot equivalente.
+> **Sobre el nombre.** El `artifactId` es `nova-` más el nombre del repositorio sin la
+> tecnología ni el número, como pide
+> [ADR-039](https://github.com/ahincho/nova-shared-01-docs/blob/main/adrs/shared/ADR-039-nombres-de-artefacto-derivados-del-repositorio.md):
+> primero la capacidad (`api-standard`), después el framework y el tipo
+> (`quarkus-extension`).
 >
-> **Por que tan corto?** GitHub Packages Maven rechaza PUTs del plugin
-> `maven-publish` de Gradle cuando el artifactId supera cierto limite de
-> longitud (~35 chars). El nombre `nova-java-api-standard-quarkus-extension`
-> (39 chars) producia "paquetes fantasma": metadata actualizada pero sin
-> artifacts descargables. Ver `docs/java/07-quarkus-analisis-adopcion.md`
-> seccion de causa raiz.
+> Hasta la 1.0.1 se publicó como `nova-quarkus-api-ext`. Ese nombre corto era un rodeo para
+> un supuesto límite de longitud de GitHub Packages que la evidencia no sostiene, y su paquete
+> ya no existe en el registro. La primera versión con el nombre actual es la **2.0.1**: la 2.0.0
+> ya existía desde julio, y una versión publicada no se sobrescribe. Para migrar un consumidor,
+> `ops/rename-artifacts.py --phase 1` de `nova-shared-01-docs` reescribe la coordenada.
 
 ## Como consumirla desde una app Quarkus
 
@@ -61,7 +58,7 @@ dependencies {
     implementation("io.quarkus:quarkus-arc")
 
     // Esta extension
-    implementation("pe.edu.nova.java.starters:nova-quarkus-api-ext:1.0.0")
+    implementation("pe.edu.nova.java.starters:nova-api-standard-quarkus-extension:2.0.1")
 
     // Transitiva: nova-api-standard ya viene incluida
 }
