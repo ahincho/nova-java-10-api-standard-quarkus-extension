@@ -3,6 +3,12 @@ import org.gradle.api.publish.maven.MavenPublication
 plugins {
     id("java-library")
     id("maven-publish")
+    id("signing")
+    // reusable-build-gradle.yml corre `./gradlew checkstyleMain`.
+    id("checkstyle")
+    // reusable-sbom.yml genera el SBOM con cyclonedxBom; sin el plugin cae a un
+    // fallback que falla al escribir build/reports/bom.json.
+    id("org.cyclonedx.bom") version "3.2.4"
     // Genera META-INF/jandex.idx en el JAR para que Quarkus descubra
     // @ServerExceptionMapper y @Singleton en apps consumidoras sin necesidad
     // de extension processor ni @BuildStep. Plugin compatible con Gradle 9.x.
@@ -93,6 +99,14 @@ tasks.test {
     }
 }
 
+checkstyle {
+    // Misma config que el resto de repos Nova (ver config/checkstyle/checkstyle.xml).
+    // Solo lint del main sourceSet; los tests usan wildcards legitimos (Assertions.*,
+    // jqwik.*) que AvoidStarImport marcaria como error.
+    sourceSets = listOf(project.sourceSets.main.get())
+    configFile = rootProject.file("config/checkstyle/checkstyle.xml")
+}
+
 dependencyCheck {
     // CRITICO: reusable-owasp-check.yml descarga un mirror NVD pre-construido
     // (~119MB) desde ahincho/nova-shared-02-pipelines (releases/tag/nvd-mirror), reconstruido
@@ -127,5 +141,16 @@ publishing {
                 password = System.getenv("GITHUB_TOKEN")
             }
         }
+    }
+}
+
+signing {
+    val gpgKeyId: String? = System.getenv("GPG_SIGNING_KEY_ID")
+    val gpgKey: String? = System.getenv("GPG_SIGNING_KEY")
+    val gpgPassword: String? = System.getenv("GPG_SIGNING_PASSWORD")
+
+    if (gpgKeyId != null && gpgKey != null) {
+        useInMemoryPgpKeys(gpgKeyId, gpgKey, gpgPassword ?: "")
+        sign(publishing.publications)
     }
 }
