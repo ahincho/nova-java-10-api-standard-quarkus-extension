@@ -26,7 +26,7 @@ requerir `META-INF/services/*` ni `@BuildStep`.
 | Campo | Valor |
 |---|---|
 | Version | `1.0.0` |
-| Quarkus | `3.33.2.1` LTS (pin Nova workspace) |
+| Quarkus | `3.33.3.3` LTS (pin Nova workspace) |
 | Java | `25` |
 | GroupId | `pe.edu.nova.java.starters` |
 | ArtifactId | `nova-quarkus-api-ext` |
@@ -135,7 +135,7 @@ public class ConstraintViolationMapper implements ExceptionMapper<ConstraintViol
 
 | Pieza | Version | Por que |
 |---|---|---|
-| Quarkus | 3.33.2.1 LTS | Pin Nova workspace; soporta Java 25 |
+| Quarkus | 3.33.3.3 LTS | Pin Nova workspace; soporta Java 25 |
 | `quarkus-rest` | (via BOM) | JAX-RS reactivo, `@Path`, `@Provider` |
 | `quarkus-arc` | (via BOM) | CDI: `@ApplicationScoped`, `@Singleton`, `@Inject` |
 | `quarkus-jackson` | (via BOM) | Aporta `ObjectMapperCustomizer` + Jackson al compileClasspath |

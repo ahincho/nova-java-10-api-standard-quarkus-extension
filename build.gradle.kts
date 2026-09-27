@@ -60,17 +60,19 @@ repositories {
 }
 
 val junitVersion = "6.0.0"
+// Una sola fuente para la versión de Quarkus: gradle.properties.
+val quarkusVersion = findProperty("quarkusPlatformVersion") as String
 
 dependencies {
     // Quarkus REST (JAX-RS reactivo) - necesario para @Path, @Provider, @ServerExceptionMapper
-    implementation("io.quarkus:quarkus-rest:3.33.2.1")
+    implementation("io.quarkus:quarkus-rest:$quarkusVersion")
     // Quarkus ARC (CDI) - necesario para @ApplicationScoped, @Singleton, @Inject
-    implementation("io.quarkus:quarkus-arc:3.33.2.1")
+    implementation("io.quarkus:quarkus-arc:$quarkusVersion")
     // Quarkus Jackson - aporta jackson-databind + la API ObjectMapperCustomizer.
-    implementation("io.quarkus:quarkus-jackson:3.33.2.1")
+    implementation("io.quarkus:quarkus-jackson:$quarkusVersion")
 
     // Libreria pura Nova - los tipos ApiResponse, ApiError, PageInfo, etc.
-    api("pe.edu.nova.java.libs:nova-api-standard:1.0.0")
+    api("pe.edu.nova.java.libs:nova-api-standard:1.0.2")
 
     testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
     testImplementation("org.junit.platform:junit-platform-launcher:$junitVersion")
