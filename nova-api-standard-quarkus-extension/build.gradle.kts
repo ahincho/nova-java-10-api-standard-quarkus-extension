@@ -22,8 +22,20 @@ dependencies {
     // Quarkus Jackson - aporta jackson-databind + la API ObjectMapperCustomizer.
     implementation("io.quarkus:quarkus-jackson:$quarkusVersion")
 
-    // Librería pura Nova - los tipos ApiResponse, ApiError, PageInfo, etc.
-    api("pe.edu.nova.java.libs:nova-api-standard:1.0.2")
+    // Librería pura Nova - los tipos ApiResponse, ApiError, PageInfo, el modelo de errores por capas, etc.
+    api("pe.edu.nova.java.libs:nova-api-standard:1.1.0")
+
+    // Opcionales: cada una existe solo en el servicio que trae su extensión (Hibernate Validator, Quarkus
+    // Security, Micrometer), y el módulo de deployment registra la clase que la nombra únicamente entonces.
+    // Las versiones salen del BOM de Quarkus, que no viaja en el POM publicado.
+    compileOnly(platform("io.quarkus:quarkus-bom:$quarkusVersion"))
+    compileOnly("jakarta.validation:jakarta.validation-api")
+    compileOnly("io.quarkus.security:quarkus-security")
+    compileOnly("io.micrometer:micrometer-core")
+
+    testImplementation(platform("io.quarkus:quarkus-bom:$quarkusVersion"))
+    testImplementation("io.micrometer:micrometer-core")
+    testImplementation("io.quarkus.security:quarkus-security")
 }
 
 // Las tareas del plugin de Quarkus guardan el proyecto entero, y el configuration cache no lo admite. Hoy está
