@@ -41,21 +41,25 @@ npm install
 
 ```
 .
-├── build.gradle.kts                          # Configuracion principal (Quarkus + OWASP + CycloneDX)
-├── settings.gradle.kts                       # Root project
+├── build.gradle.kts                          # Lo que comparten los dos modulos (OWASP, CycloneDX, publicacion)
+├── settings.gradle.kts                       # Root project y los dos modulos
 ├── gradle.properties                         # version + quarkusPlatformVersion + caching
 ├── config/checkstyle/checkstyle.xml          # Reglas de estilo
 ├── .github/workflows/
 │   ├── ci.yml                                # Pipeline en PRs
 │   ├── release-please.yml                    # Genera PRs de release automaticos
 │   └── publish-on-tag.yml                    # Publica a GitHub Packages al pushear tag vX.Y.Z
-├── src/main/java/pe/edu/nova/java/starters/api/standard/quarkus/
-│   ├── mapper/ApiExceptionMapper.java        # @Provider, mapea Throwable -> ApiResponse
-│   └── jackson/ApiObjectMapperCustomizer.java # @Singleton, configura ObjectMapper
-└── src/test/java/pe/edu/nova/java/starters/api/standard/quarkus/
-    ├── resource/TestApiResource.java         # JAX-RS resource de prueba
-    ├── ApiResponseEnvelopeTest.java          # Tests del envelope JSON
-    └── ApiExceptionMapperTest.java           # Tests del mapper
+├── nova-api-standard-quarkus-extension/      # El runtime: lo que el servicio declara
+│   └── src/
+│       ├── main/java/pe/edu/nova/java/starters/api/standard/quarkus/
+│       │   ├── mapper/ApiExceptionMapper.java         # @ServerExceptionMapper, mapea Throwable -> ApiResponse
+│       │   └── jackson/ApiObjectMapperCustomizer.java # @Singleton, configura ObjectMapper
+│       └── test/                             # Pruebas unitarias, sin Quarkus
+└── nova-api-standard-quarkus-extension-deployment/   # Los pasos de build, que Quarkus resuelve solo
+    └── src/
+        ├── main/java/pe/edu/nova/java/starters/api/standard/quarkus/deployment/
+        │   └── NovaApiStandardProcessor.java # Registra los beans y los records del sobre
+        └── test/                             # NovaApiStandardProcessorTest y las pruebas QuarkusUnitTest
 ```
 
 ## Que hacer antes de abrir PR
