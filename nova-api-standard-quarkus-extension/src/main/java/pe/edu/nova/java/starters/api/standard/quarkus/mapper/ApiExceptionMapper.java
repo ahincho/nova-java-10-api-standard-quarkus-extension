@@ -3,6 +3,7 @@ package pe.edu.nova.java.starters.api.standard.quarkus.mapper;
 import pe.edu.nova.java.libs.api.standard.error.ApiError;
 import pe.edu.nova.java.libs.api.standard.response.ApiResponse;
 
+import jakarta.inject.Singleton;
 import jakarta.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
@@ -36,7 +37,11 @@ import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
  * </ul>
  * Mensajes tecnicos (con stack traces) solo se incluyen en responses 5xx para
  * no filtrar detalles internos al cliente en errores de usuario.
+ * <p>
+ * El módulo de deployment de la extensión lo registra como bean: el servicio ya no
+ * necesita {@code quarkus.index-dependency} para que Quarkus lo descubra.
  */
+@Singleton
 public class ApiExceptionMapper {
 
     private static final Logger LOG = Logger.getLogger(ApiExceptionMapper.class);

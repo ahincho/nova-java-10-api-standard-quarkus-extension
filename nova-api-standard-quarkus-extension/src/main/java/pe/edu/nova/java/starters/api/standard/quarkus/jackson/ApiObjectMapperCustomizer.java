@@ -23,9 +23,8 @@ import jakarta.inject.Singleton;
  *       {@code new MetadataRequestContext()}) se serialicen como {@code {}}.</li>
  * </ul>
  * <p>
- * Se registra como CDI bean ({@code @Singleton}); SmallRye lo descubre y lo
- * aplica sobre el ObjectMapper global. No requiere codigo de build-time
- * (ver doc 07 §4.4.3 - "extension coloquial").
+ * Es un bean CDI ({@code @Singleton}) que el módulo de deployment de la extensión
+ * registra al construir la aplicación; Quarkus lo aplica sobre el ObjectMapper global.
  */
 @Singleton
 public class ApiObjectMapperCustomizer implements ObjectMapperCustomizer {
