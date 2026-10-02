@@ -35,6 +35,7 @@ dependencies {
 
     testImplementation(platform("io.quarkus:quarkus-bom:$quarkusVersion"))
     testImplementation("io.micrometer:micrometer-core")
+    testImplementation("io.quarkus.security:quarkus-security")
 }
 
 // Las tareas del plugin de Quarkus guardan el proyecto entero, y el configuration cache no lo admite. Hoy está

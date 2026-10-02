@@ -175,6 +175,13 @@ con la causa.
   una respuesta con entidad responde por ella. Tampoco se toca una redirección ni ninguna respuesta que no
   sea un error.
 - **Quarkus REST arma su propio 405 sin el header `Allow`**, así que no hay nada que conservar en ese caso.
+- **Un 401 de Quarkus Security lleva el reto del mecanismo de autenticación**, el header `WWW-Authenticate` que
+  exige RFC 9110, sección 15.5.2. Los mappers de la extensión reemplazan a los de Quarkus, que lo añadían, así
+  que hacen lo mismo: le piden el reto al autenticador de la petición y suman sus headers a la respuesta, cuyo
+  cuerpo sigue siendo el sobre de Nova y cuyo status sigue siendo 401. Si el servicio no tiene mecanismo de
+  autenticación, o el reto falla, el 401 sale sin el header; en un servicio sin mecanismo Quarkus contesta un
+  403, y aquí sigue siendo 401. Un 403 no lleva reto, y una redirección como la de un mecanismo de formulario
+  sigue su camino.
 
 ### 5. Reemplazar un puerto
 
@@ -214,8 +221,8 @@ ni la causa: recibe un `SanitizedFailure`. Por la misma razón los mappers no se
 - **La autenticación que Quarkus rechaza antes de llegar a REST.** Con la autenticación proactiva, un token
   inválido se responde en la capa HTTP, sin pasar por ningún mapper, y sale sin cuerpo
   ([ADR-050](https://github.com/ahincho/nova-shared-01-docs/blob/main/adrs/java/ADR-050-errores-por-capas-en-quarkus.md),
-  pregunta abierta 3). Lo que sí cubre son las excepciones de seguridad que llegan a REST; esas salen sin el
-  header `WWW-Authenticate` que añade el mapper integrado de Quarkus, que este reemplaza.
+  pregunta abierta 3). Lo que sí cubre son las excepciones de seguridad que llegan a REST, y esas salen con el
+  header `WWW-Authenticate` de su mecanismo de autenticación (sección 4).
 - **Una `WebApplicationException` con cuerpo**, como la que lanza un cliente REST con la respuesta del
   proveedor, se devuelve tal cual: JAX-RS no consulta a los mappers cuando la respuesta trae entidad. Para que
   cuente como un incidente de `infrastructure`, con el proveedor en el log y sin su cuerpo en la respuesta, el
@@ -267,7 +274,8 @@ Cada módulo prueba lo que es suyo:
   - la **suite de contrato de ADR-031**, los mismos nueve casos que corren Spring Boot y NestJS;
   - la línea de log y sus campos del MDC, el `traceId` que llena `quarkus-opentelemetry`, el generado cuando
     falta y los headers de un 405;
-  - las excepciones de JAX-RS, la validación y la seguridad;
+  - las excepciones de JAX-RS, la validación y la seguridad, esta última con un mecanismo de autenticación
+    Basic de verdad para ver el `WWW-Authenticate` de un 401;
   - el reemplazo de los puertos con beans propios y el contador `nova.errors` con Micrometer.
 
 El plugin `io.quarkus.extension` va aplicado al runtime: genera el descriptor de la extensión, la vincula

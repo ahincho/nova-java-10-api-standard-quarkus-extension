@@ -29,6 +29,10 @@ dependencies {
     testImplementation("io.quarkus:quarkus-hibernate-validator-deployment:$quarkusVersion")
     testImplementation("io.quarkus:quarkus-security:$quarkusVersion")
     testImplementation("io.quarkus:quarkus-security-deployment:$quarkusVersion")
+    // Un mecanismo de autenticación de verdad, el de Basic con usuarios embebidos, para ver el reto que
+    // Quarkus pone en un 401. Sin configurarlo no hace nada, así que las demás pruebas no lo notan.
+    testImplementation("io.quarkus:quarkus-elytron-security-properties-file:$quarkusVersion")
+    testImplementation("io.quarkus:quarkus-elytron-security-properties-file-deployment:$quarkusVersion")
     testImplementation("io.quarkus:quarkus-micrometer:$quarkusVersion")
     testImplementation("io.quarkus:quarkus-micrometer-deployment:$quarkusVersion")
     testImplementation("io.quarkus:quarkus-opentelemetry:$quarkusVersion")
