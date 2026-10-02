@@ -52,14 +52,23 @@ npm install
 ├── nova-api-standard-quarkus-extension/      # El runtime: lo que el servicio declara
 │   └── src/
 │       ├── main/java/pe/edu/nova/java/starters/api/standard/quarkus/
-│       │   ├── mapper/ApiExceptionMapper.java         # @ServerExceptionMapper, mapea Throwable -> ApiResponse
+│       │   ├── error/                        # El manejo de errores por capas (ADR-031 y ADR-050)
+│       │   │   ├── NovaExceptionMappers.java       # @ServerExceptionMapper: lee cada excepcion por lo que es
+│       │   │   ├── ValidationExceptionMappers.java # Solo con Hibernate Validator
+│       │   │   ├── SecurityExceptionMappers.java   # Solo con Quarkus Security
+│       │   │   ├── ErrorResponder.java             # El nucleo: registra, cuenta y responde con los puertos
+│       │   │   ├── ErrorPortProducers.java         # Los puertos de Nova como @DefaultBean
+│       │   │   ├── MdcTraceIdSource.java           # El traceId del MDC, que llena quarkus-opentelemetry
+│       │   │   └── *ErrorCounter*.java             # El contador nova.errors: el de Micrometer o el vacio
 │       │   └── jackson/ApiObjectMapperCustomizer.java # @Singleton, configura ObjectMapper
+│       ├── main/resources/META-INF/services/ # El TraceIdSource, para ServiceLoader
 │       └── test/                             # Pruebas unitarias, sin Quarkus
 └── nova-api-standard-quarkus-extension-deployment/   # Los pasos de build, que Quarkus resuelve solo
     └── src/
         ├── main/java/pe/edu/nova/java/starters/api/standard/quarkus/deployment/
-        │   └── NovaApiStandardProcessor.java # Registra los beans y los records del sobre
-        └── test/                             # NovaApiStandardProcessorTest y las pruebas QuarkusUnitTest
+        │   └── NovaApiStandardProcessor.java # Registra beans, mappers, TraceIdSource y records del sobre
+        └── test/                             # NovaApiStandardProcessorTest y las pruebas QuarkusUnitTest,
+                                              # con la suite de contrato de ADR-031
 ```
 
 ## Que hacer antes de abrir PR

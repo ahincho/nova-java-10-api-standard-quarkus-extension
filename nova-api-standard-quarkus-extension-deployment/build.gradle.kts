@@ -24,6 +24,15 @@ dependencies {
     testImplementation("io.quarkus:quarkus-rest-jackson:$quarkusVersion")
     testImplementation("io.quarkus:quarkus-rest-jackson-deployment:$quarkusVersion")
     testImplementation("io.rest-assured:rest-assured:5.5.6")
+    // Las extensiones opcionales que activan mappers y el contador: cada prueba las ve como las vería un servicio.
+    testImplementation("io.quarkus:quarkus-hibernate-validator:$quarkusVersion")
+    testImplementation("io.quarkus:quarkus-hibernate-validator-deployment:$quarkusVersion")
+    testImplementation("io.quarkus:quarkus-security:$quarkusVersion")
+    testImplementation("io.quarkus:quarkus-security-deployment:$quarkusVersion")
+    testImplementation("io.quarkus:quarkus-micrometer:$quarkusVersion")
+    testImplementation("io.quarkus:quarkus-micrometer-deployment:$quarkusVersion")
+    testImplementation("io.quarkus:quarkus-opentelemetry:$quarkusVersion")
+    testImplementation("io.quarkus:quarkus-opentelemetry-deployment:$quarkusVersion")
 }
 
 tasks.withType<JavaCompile>().configureEach {
