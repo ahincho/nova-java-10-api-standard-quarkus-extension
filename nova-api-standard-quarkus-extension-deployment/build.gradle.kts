@@ -37,6 +37,18 @@ dependencies {
     testImplementation("io.quarkus:quarkus-micrometer-deployment:$quarkusVersion")
     testImplementation("io.quarkus:quarkus-opentelemetry:$quarkusVersion")
     testImplementation("io.quarkus:quarkus-opentelemetry-deployment:$quarkusVersion")
+    // Los endpoints que no son recursos JAX-RS y que el sobre de éxito no debe tocar: la salud, las métricas en
+    // formato Prometheus y el documento de OpenAPI.
+    testImplementation("io.quarkus:quarkus-micrometer-registry-prometheus:$quarkusVersion")
+    testImplementation("io.quarkus:quarkus-micrometer-registry-prometheus-deployment:$quarkusVersion")
+    testImplementation("io.quarkus:quarkus-smallrye-health:$quarkusVersion")
+    testImplementation("io.quarkus:quarkus-smallrye-health-deployment:$quarkusVersion")
+    testImplementation("io.quarkus:quarkus-smallrye-openapi:$quarkusVersion")
+    testImplementation("io.quarkus:quarkus-smallrye-openapi-deployment:$quarkusVersion")
+    // La Dev UI, que solo existe en modo dev: un servicio la trae sola con quarkusDev, y la prueba que arranca la
+    // aplicación en ese modo la necesita en el classpath.
+    testImplementation("io.quarkus:quarkus-devui:$quarkusVersion")
+    testImplementation("io.quarkus:quarkus-devui-deployment:$quarkusVersion")
 }
 
 tasks.withType<JavaCompile>().configureEach {

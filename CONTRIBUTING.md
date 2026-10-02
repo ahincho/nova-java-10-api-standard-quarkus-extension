@@ -60,13 +60,14 @@ npm install
 │       │   │   ├── ErrorPortProducers.java         # Los puertos de Nova como @DefaultBean
 │       │   │   ├── MdcTraceIdSource.java           # El traceId del MDC, que llena quarkus-opentelemetry
 │       │   │   └── *ErrorCounter*.java             # El contador nova.errors: el de Micrometer o el vacio
+│       │   ├── response/ApiResponseFilter.java     # @ServerResponseFilter: envuelve el exito en el sobre de Nova
 │       │   └── jackson/ApiObjectMapperCustomizer.java # @Singleton, configura ObjectMapper
 │       ├── main/resources/META-INF/services/ # El TraceIdSource, para ServiceLoader
 │       └── test/                             # Pruebas unitarias, sin Quarkus
 └── nova-api-standard-quarkus-extension-deployment/   # Los pasos de build, que Quarkus resuelve solo
     └── src/
         ├── main/java/pe/edu/nova/java/starters/api/standard/quarkus/deployment/
-        │   └── NovaApiStandardProcessor.java # Registra beans, mappers, TraceIdSource y records del sobre
+        │   └── NovaApiStandardProcessor.java # Registra beans, mappers, filtro, TraceIdSource y records del sobre
         └── test/                             # NovaApiStandardProcessorTest y las pruebas QuarkusUnitTest,
                                               # con la suite de contrato de ADR-031
 ```

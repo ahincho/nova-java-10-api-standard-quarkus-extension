@@ -8,6 +8,8 @@
  *   <li>{@link pe.edu.nova.java.starters.api.standard.quarkus.error} responde cada error con el sobre de
  *       Nova y el modelo de errores por capas de ADR-031: los mappers del núcleo, los puertos que un
  *       servicio reemplaza con un bean, la fuente del {@code traceId} y el contador {@code nova.errors}.</li>
+ *   <li>{@link pe.edu.nova.java.starters.api.standard.quarkus.response} envuelve el éxito en el mismo sobre: un
+ *       recurso devuelve el objeto y el filtro lo entrega como {@code ApiResponse} con el status real.</li>
  *   <li>{@link pe.edu.nova.java.starters.api.standard.quarkus.jackson.ApiObjectMapperCustomizer}
  *       configura el {@code ObjectMapper} para serializar correctamente
  *       {@code java.time.*} y beans vacíos.</li>

@@ -12,6 +12,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import java.time.Instant;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import pe.edu.nova.java.libs.api.standard.metadata.ApiMetadata;
@@ -29,7 +30,12 @@ class ApiObjectMapperQuarkusTest {
 
     @Test
     void anEmptyBeanIsSerializedAsAnEmptyObjectInsteadOfFailing() {
-        given().get("/envelope/empty-bean").then().statusCode(200).body(equalTo("{}"));
+        // El recurso devuelve el bean y el sobre de éxito lo lleva en data: sin FAIL_ON_EMPTY_BEANS sale {}
+        given().get("/envelope/empty-bean")
+                .then()
+                .statusCode(200)
+                .body("success", is(true))
+                .body("data", equalTo(Map.of()));
     }
 
     @Test
