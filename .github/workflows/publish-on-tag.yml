@@ -21,6 +21,9 @@ jobs:
 
       - name: Detect new release tag
         id: detect
+        env:
+          # El commit que disparó "Release Please": el tag de un release nuevo apunta a él.
+          WORKFLOW_RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           LATEST_TAG=$(git for-each-ref --sort=-creatordate --format='%(refname:short)' refs/tags/v\* 2>/dev/null | head -1)
 
@@ -43,6 +46,20 @@ jobs:
             echo "::notice::Latest tag ($LATEST_TAG) does not match manifest ($MANIFEST_VERSION). No release was created in the triggering workflow_run. Skipping."
             echo "should_publish=false" >> "$GITHUB_OUTPUT"
             exit 0
+          fi
+
+          # Este workflow corre tras cada push a main, no solo tras un release. Sin esta comprobación el último
+          # tag sigue coincidiendo con el manifiesto y se intenta publicar de nuevo una versión que ya existe.
+          if [ -n "${WORKFLOW_RUN_HEAD_SHA}" ]; then
+            TAG_SHA=$(git rev-list -n 1 "${LATEST_TAG}" 2>/dev/null || echo "")
+            if [ "${TAG_SHA}" != "${WORKFLOW_RUN_HEAD_SHA}" ]; then
+              echo "::notice::Tag ${LATEST_TAG} (${TAG_SHA}) was NOT created in this workflow_run (head_sha=${WORKFLOW_RUN_HEAD_SHA}). Skipping."
+              echo "should_publish=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "Tag ${LATEST_TAG} confirmed as new (matches workflow_run head_sha)."
+          else
+            echo "::warning::No workflow_run.head_sha available; relying solely on manifest match."
           fi
 
           echo "New release detected: $LATEST_TAG (manifest version matches: $MANIFEST_VERSION)"
