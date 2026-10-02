@@ -31,6 +31,7 @@ import pe.edu.nova.java.starters.api.standard.quarkus.error.NovaExceptionMappers
 import pe.edu.nova.java.starters.api.standard.quarkus.error.SecurityExceptionMappers;
 import pe.edu.nova.java.starters.api.standard.quarkus.error.ValidationExceptionMappers;
 import pe.edu.nova.java.starters.api.standard.quarkus.jackson.ApiObjectMapperCustomizer;
+import pe.edu.nova.java.starters.api.standard.quarkus.response.ApiResponseFilter;
 
 /**
  * Los pasos de build de la extensión del estándar de API (ADR-050).
@@ -62,7 +63,7 @@ public class NovaApiStandardProcessor {
      * propio. El contador es el de Micrometer si Micrometer es el sistema de métricas del servicio y el vacío si
      * no; nunca los dos, porque serían dos {@code @DefaultBean} del mismo tipo. Los mappers de validación y de
      * seguridad nombran clases que solo existen si el servicio trae esas extensiones, así que se registran
-     * únicamente entonces.
+     * únicamente entonces. El filtro del sobre de éxito no nombra ninguna clase opcional y va siempre.
      *
      * <p>Micrometer no se detecta con una capacidad: {@code quarkus-micrometer} declara {@code io.quarkus.metrics},
      * el nombre genérico de cualquier sistema de métricas. Lo que dice si Micrometer está encendido es el
@@ -72,7 +73,8 @@ public class NovaApiStandardProcessor {
     AdditionalBeanBuildItem beans(Capabilities capabilities, Optional<MetricsCapabilityBuildItem> metrics) {
         AdditionalBeanBuildItem.Builder beans = AdditionalBeanBuildItem.builder()
                 .setUnremovable()
-                .addBeanClasses(ApiObjectMapperCustomizer.class, ErrorPortProducers.class, ErrorResponder.class)
+                .addBeanClasses(ApiObjectMapperCustomizer.class, ErrorPortProducers.class, ErrorResponder.class,
+                        ApiResponseFilter.class)
                 .addBeanClasses(names(mapperClasses(capabilities)));
         boolean micrometer = metrics.filter(capability -> capability.metricsSupported(MetricsFactory.MICROMETER))
                 .isPresent();
@@ -81,14 +83,15 @@ public class NovaApiStandardProcessor {
     }
 
     /**
-     * Las clases con {@code @ServerExceptionMapper}. Quarkus REST busca esa anotación en el índice de la
-     * aplicación y de las dependencias que el servicio declara; ser bean no alcanza para que el mapper entre en
-     * la cadena de excepciones.
+     * Las clases con {@code @ServerExceptionMapper} y el filtro con {@code @ServerResponseFilter}. Quarkus REST
+     * busca esas anotaciones en el índice de la aplicación y de las dependencias que el servicio declara; ser
+     * bean no alcanza para que el mapper entre en la cadena de excepciones ni para que el filtro se ejecute.
      */
     @BuildStep
     AdditionalIndexedClassesBuildItem indexedClasses(Capabilities capabilities) {
-        return new AdditionalIndexedClassesBuildItem(
-                names(mapperClasses(capabilities)).toArray(String[]::new));
+        List<String> classes = new ArrayList<>(names(mapperClasses(capabilities)));
+        classes.add(ApiResponseFilter.class.getName());
+        return new AdditionalIndexedClassesBuildItem(classes.toArray(String[]::new));
     }
 
     /**

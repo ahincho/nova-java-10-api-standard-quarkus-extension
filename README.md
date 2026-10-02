@@ -1,7 +1,8 @@
 # nova-api-standard-quarkus-extension
 
 > Extensión de Quarkus que conecta [`nova-api-standard`](https://github.com/ahincho/nova-java-01-api-standard),
-> la librería pura y sin framework, con Quarkus: responde cada error con el sobre de Nova y el
+> la librería pura y sin framework, con Quarkus: envuelve lo que devuelve un recurso en el sobre de Nova y responde
+> cada error con ese sobre y el
 > [modelo de errores por capas](https://github.com/ahincho/nova-shared-01-docs/blob/main/adrs/shared/ADR-031-modulo-de-errores-por-capas-con-trazabilidad.md).
 
 ## Módulos
@@ -11,20 +12,22 @@ Desde la 3.0.0 es una extensión de Quarkus completa, con su módulo de deployme
 
 | Módulo | `artifactId` | Qué tiene |
 |---|---|---|
-| runtime | `nova-api-standard-quarkus-extension` | los mappers de excepciones, los productores de los puertos, el `TraceIdSource`, el contador `nova.errors` y el customizer de Jackson |
-| deployment | `nova-api-standard-quarkus-extension-deployment` | los pasos de build: registrar los beans, el `TraceIdSource` y los records del sobre, y activar el contador si hay Micrometer |
+| runtime | `nova-api-standard-quarkus-extension` | el filtro del sobre de éxito, los mappers de excepciones, los productores de los puertos, el `TraceIdSource`, el contador `nova.errors` y el customizer de Jackson |
+| deployment | `nova-api-standard-quarkus-extension-deployment` | los pasos de build: registrar los beans, el filtro, el `TraceIdSource` y los records del sobre, y activar el contador si hay Micrometer |
 
 Los dos salen con la misma versión y el mismo `groupId`, `pe.edu.nova.java.starters`. **El servicio solo
 declara el runtime**: Quarkus resuelve el deployment por su cuenta, con la misma versión.
 
 ## Qué hace
 
-Un servicio Quarkus que lanza `DomainError.notFound(...)` responde un 404 con el sobre de Nova, el código del
+Un recurso devuelve el objeto, y la extensión lo entrega en el sobre de Nova con el status real de la respuesta.
+Un servicio Quarkus que lanza `DomainError.notFound(...)` responde un 404 con el mismo sobre, el código del
 error y un `traceId` que un alumno puede citar, y el log lo registra en `WARN` sin stack trace. Lo mismo que
 el starter de Spring Boot y NestJS, con la misma suite de contrato.
 
 | Pieza | Función |
 |---|---|
+| `ApiResponseFilter` (`@ServerResponseFilter`) | El sobre de éxito: envuelve en `ApiResponse` lo que un recurso devuelve como objeto, con el status real. Es el equivalente del `ApiResponseInterceptor` de Spring. |
 | `NovaExceptionMappers` (`@ServerExceptionMapper`) | El núcleo: lee cada excepción por lo que es (ver la tabla de más abajo) y la responde. No se reemplaza. |
 | `ValidationExceptionMappers`, `SecurityExceptionMappers` | La validación y la seguridad. Se registran solo si el servicio trae Hibernate Validator o Quarkus Security. |
 | `ErrorResponder` | Registra el error en el log una sola vez, lo cuenta y se lo pasa a los puertos sin el proveedor ni la causa. |
@@ -35,8 +38,9 @@ el starter de Spring Boot y NestJS, con la misma suite de contrato.
 
 El módulo de deployment corre al construir la aplicación, nunca al arrancarla:
 
-- **Registra los beans** con `AdditionalBeanBuildItem` y los indexa para Quarkus REST. Por eso **el servicio
-  no necesita `quarkus.index-dependency`**: con la dependencia alcanza.
+- **Registra los beans** con `AdditionalBeanBuildItem` y los indexa para Quarkus REST, que es lo que hace que
+  el filtro se ejecute y que los mappers entren en la cadena de excepciones. Por eso **el servicio no necesita
+  `quarkus.index-dependency`**: con la dependencia alcanza.
 - **Registra el `TraceIdSource`** con `ServiceProviderBuildItem`, porque en una imagen nativa `ServiceLoader`
   solo ve lo que se registró al construirla.
 - **Registra los records del sobre para la reflexión** (`ApiResponse`, `ApiError`, `ApiMetadata`,
@@ -100,7 +104,7 @@ dependencies {
 El sobre viaja como JSON, así que el servicio declara `quarkus-rest-jackson`, como cualquier servicio
 Quarkus que responde JSON.
 
-### 2. Lanzar errores por capa desde los recursos
+### 2. Devolver el objeto y lanzar errores por capa desde los recursos
 
 ```java
 @Path("/users")
@@ -109,19 +113,39 @@ public class UserResource {
 
     @GET
     @Path("/{id}")
-    public ApiResponse<UserDto> findById(@PathParam("id") String id) {
-        UserDto user = userService.findById(id)
+    public UserDto findById(@PathParam("id") String id) {
+        return userService.findById(id)
                 .orElseThrow(() -> DomainError.notFound("USER_NOT_FOUND", "El usuario " + id + " no existe"));
-        return ApiResponse.ok(user);
+    }
+
+    @POST
+    public RestResponse<UserDto> create(NewUserDto request) {
+        return RestResponse.status(RestResponse.Status.CREATED, userService.create(request));
     }
 }
 ```
 
-El recurso no sabe de HTTP: el `ErrorStatusMapper` decide que un `NOT_FOUND` de `domain` es un 404, y el
-mismo caso de uso sirve detrás de un consumidor de cola.
+El recurso no sabe de HTTP ni del sobre: devuelve el objeto, y el filtro lo entrega como `ApiResponse` con el status
+real, así que el `create` de arriba responde `"status": 201` en el cuerpo. Tampoco decide los errores: el
+`ErrorStatusMapper` decide que un `NOT_FOUND` de `domain` es un 404, y el mismo caso de uso sirve detrás de un
+consumidor de cola. Un recurso que ya arma el `ApiResponse` a mano, como los ejemplos 04 y 06, sigue funcionando
+igual: el filtro no lo envuelve de nuevo.
 
 ### 3. Beneficios automáticos (sin código extra)
 
+- Lo que devuelve `findById` sale en el sobre de éxito, con el status real y sin `metadata`, como en Spring:
+  ```json
+  {
+    "success": true,
+    "status": 200,
+    "data": {"id": "42", "name": "Ana"},
+    "errors": [],
+    "metadata": null,
+    "links": [],
+    "rateLimitInfo": null,
+    "pageInfo": null
+  }
+  ```
 - El `DomainError.notFound` de arriba responde un `404`, con su código propio porque es un 4xx:
   ```json
   {
@@ -149,7 +173,38 @@ mismo caso de uso sirve detrás de un consumidor de cola.
 - Los campos `Instant` en `ApiMetadata.timestamp` se serializan como ISO-8601
   (`2026-07-14T12:34:56Z`), no como timestamp numérico.
 
-### 4. Cómo se lee cada excepción
+### 4. El sobre de éxito
+
+`ApiResponseFilter` es un `@ServerResponseFilter` de Quarkus REST: corre con la respuesta de cada recurso JAX-RS y
+aplica las reglas del `ApiResponseInterceptor` de Spring, cada una con su equivalente en JAX-RS. No tiene un
+interruptor para apagarlo, como pide
+[ADR-034](https://github.com/ahincho/nova-shared-01-docs/blob/main/adrs/shared/ADR-034-puertos-con-implementacion-por-defecto.md),
+y tampoco una anotación para sacar un método del sobre, como Spring: se sale del sobre devolviendo un `String`, un
+`byte[]` o un flujo.
+
+| El recurso contesta | Qué sale | En Spring |
+|---|---|---|
+| un objeto, una lista, un mapa, un `Uni<T>` o un `CompletionStage<T>` | el sobre de éxito con el objeto en `data` y el status real: un 201 dice 201, con `@ResponseStatus`, `Response` o `RestResponse` | igual |
+| un 2xx sin cuerpo, como `Response.ok().build()`, `Response.created(uri).build()` o `Response.accepted().build()` | el sobre con `data: null` y el status real | igual (`ResponseEntity.ok().build()`) |
+| un `ApiResponse` armado a mano | tal cual, byte por byte | igual |
+| un 4xx o 5xx sin lanzar una excepción, como `Response.status(404).build()` | un sobre de error armado con los puertos, con el cuerpo propio del recurso en `data` si lo mandó; no va al log ni al contador | igual |
+| un `String`, un `byte[]`, un `InputStream`, un `File` o un `StreamingOutput` | tal cual | `String`, `byte[]` y `Resource` |
+| un cuerpo con otro tipo de contenido (texto, CSV, PDF, XML) | tal cual | el conversor elegido no es de JSON |
+| un número o un booleano suelto, sin `@Produces(MediaType.APPLICATION_JSON)` | tal cual: Quarkus REST lo escribe como texto | diferencia: Spring lo escribe como JSON y lo envuelve |
+| un flujo `Multi` como arreglo JSON, NDJSON o eventos SSE | tal cual, elemento por elemento | no aplica |
+| un método que devuelve `null` | un 204 sin cuerpo, como manda JAX-RS | diferencia: Spring contesta 200 con `data: null` |
+| un 204, un 205 o un 304 | tal cual, sin cuerpo | igual en el cable: Spring arma el sobre y Tomcat no escribe el cuerpo de estos status |
+| un 206 o un 3xx | tal cual | diferencia: Spring escribe el sobre; aquí no, porque un 206 es un fragmento del cuerpo y el de una redirección no lo lee nadie |
+| lo que contesta el manejo de excepciones: los mappers de la extensión, los de un servicio o una `WebApplicationException` con cuerpo propio | tal cual: los de la extensión ya traen el sobre que armaron los puertos | diferencia: Spring no toca lo que contesta su manejador, pero sí envuelve el `@ControllerAdvice` del servicio; aquí un mapper del servicio no se distingue del de la extensión sin marcar cada respuesta, y ADR-050 manda cambiar la forma de un error con los puertos |
+| SmallRye Health, las métricas, OpenAPI y la Dev UI | su propio formato: son rutas de Vert.x, no recursos JAX-RS, y ni siquiera pasan por el filtro; un health caído sigue diciendo `"status": "DOWN"` | Actuator y el controlador de errores de Spring Boot |
+| una petición HEAD u OPTIONS, o un cliente que no acepta el JSON con que se escribiría el sobre | tal cual | igual: Spring no escribe lo que el cliente no acepta |
+
+- **El sobre de éxito no lleva `metadata`**, igual que el de Spring: es `null`. Solo un error lleva
+  `metadata.traceId` y `metadata.timestamp`.
+- **Un recurso con su propio `/health` o `/metrics` en JAX-RS** es un recurso más y sale en el sobre. Para las
+  sondas de salud, usar SmallRye Health.
+
+### 5. Cómo se lee cada excepción
 
 Una excepción del framework se lee por su status. La capa decide el nivel del log: `domain` y `application`
 son esperados y van en `WARN` sin stack trace; `infrastructure` y `platform` son incidentes y van en `ERROR`
@@ -183,7 +238,7 @@ con la causa.
   403, y aquí sigue siendo 401. Un 403 no lleva reto, y una redirección como la de un mecanismo de formulario
   sigue su camino.
 
-### 5. Reemplazar un puerto
+### 6. Reemplazar un puerto
 
 Cada puerto es un `@DefaultBean`: un servicio, o la extensión de una organización como UTP, declara su propio
 bean del mismo tipo y la extensión lo usa, sin forkear y sin un mapper más específico. Es el papel de
@@ -204,7 +259,7 @@ public class OrganizationPorts {
 El núcleo escribe el log y sanea antes de llamar a los puertos, así que un puerto propio nunca ve al proveedor
 ni la causa: recibe un `SanitizedFailure`. Por la misma razón los mappers no se reemplazan.
 
-### 6. La traza, el log y la métrica
+### 7. La traza, el log y la métrica
 
 - **`traceId`**: lo da la clave `traceId` del MDC de JBoss Logging, que llena `quarkus-opentelemetry`. Un error
   de Nova lo captura al nacer y llega a `metadata.traceId`. Si la petición no tiene uno, el núcleo genera uno,
@@ -216,26 +271,36 @@ ni la causa: recibe un `SanitizedFailure`. Por la misma razón los mappers no se
 - **`nova.errors`**: con Micrometer, cada error respondido suma uno al contador, con las etiquetas `layer` y
   `code`. Un servicio lo reemplaza declarando su propio bean `ErrorCounter`.
 
-### 7. Lo que no cubre
+### 8. Lo que no cubre
 
 - **La autenticación que Quarkus rechaza antes de llegar a REST.** Con la autenticación proactiva, un token
   inválido se responde en la capa HTTP, sin pasar por ningún mapper, y sale sin cuerpo
   ([ADR-050](https://github.com/ahincho/nova-shared-01-docs/blob/main/adrs/java/ADR-050-errores-por-capas-en-quarkus.md),
   pregunta abierta 3). Lo que sí cubre son las excepciones de seguridad que llegan a REST, y esas salen con el
-  header `WWW-Authenticate` de su mecanismo de autenticación (sección 4).
+  header `WWW-Authenticate` de su mecanismo de autenticación (sección 5).
 - **Una `WebApplicationException` con cuerpo**, como la que lanza un cliente REST con la respuesta del
-  proveedor, se devuelve tal cual: JAX-RS no consulta a los mappers cuando la respuesta trae entidad. Para que
-  cuente como un incidente de `infrastructure`, con el proveedor en el log y sin su cuerpo en la respuesta, el
-  servicio la traduce a `InfrastructureError`.
+  proveedor, se devuelve tal cual: JAX-RS no consulta a los mappers cuando la respuesta trae entidad, y el filtro
+  del sobre de éxito tampoco la toca. Para que cuente como un incidente de `infrastructure`, con el proveedor en el
+  log y sin su cuerpo en la respuesta, el servicio la traduce a `InfrastructureError`.
+- **El documento de OpenAPI** describe el tipo que devuelve el recurso, no el sobre en que sale: el filtro envuelve
+  al responder, no al construir. Pasa igual con el starter de Spring Boot.
 
 ## Migrating to 3.0.0
 
-La 3.0.0 es una versión mayor porque cambia lo que un cliente recibe ante un error
+La 3.0.0 es una versión mayor porque cambia lo que un cliente recibe: el éxito sale en el sobre de Nova y cada error
+sale por capas
 ([ADR-050](https://github.com/ahincho/nova-shared-01-docs/blob/main/adrs/java/ADR-050-errores-por-capas-en-quarkus.md)).
 La receta:
 
 | Antes (2.x) | Desde la 3.0.0 | Qué hacer |
 |---|---|---|
+| un recurso que devolvía un objeto suelto: el cuerpo era el objeto | el cuerpo es el sobre de éxito, con el objeto en `data` y el status real en `status` | los clientes leen el objeto de `data`; el recurso no cambia |
+| un recurso que devolvía un `ApiResponse` armado a mano | sin cambio: el filtro no lo envuelve de nuevo, byte por byte | nada; conviene devolver el objeto suelto y dejar que la extensión arme el sobre, que además pone el status real |
+| un `Response` 2xx sin cuerpo, como `Response.ok().build()` | el sobre con `data: null` | nada; es aditivo para quien no lee el cuerpo |
+| un 4xx o 5xx que el recurso contestaba sin excepción, con o sin cuerpo propio | un sobre de error, con el cuerpo propio en `data` | lanzar el error por capas, o leer el cuerpo de `data` |
+| un `String`, un `byte[]`, un flujo, un 204 o un cuerpo que no es JSON | sin cambio: salen tal cual | nada |
+| un recurso JAX-RS propio de salud o de métricas, como `@Path("/health")` | sale en el sobre, porque es un recurso más | usar SmallRye Health, que no pasa por el filtro, o devolver un `String` |
+| un `@ServerExceptionMapper` del servicio con cuerpo propio | sin cambio: contesta como lo armó | nada; para el sobre, armar el `ApiResponse` en el mapper o usar un puerto |
 | `IllegalArgumentException` respondida como 400 con su mensaje | un `PlatformError`, respondido como 500 | lanzar `ApplicationError.invalidInput(...)` ante una entrada inválida |
 | `SecurityException` respondida como 403 | 500 | lanzar `ApplicationError.forbidden(...)`, o dejar que Quarkus Security responda |
 | `INTERNAL_ERROR` en todo 5xx | el código del status: `INTERNAL_SERVER_ERROR`, `BAD_GATEWAY`, `SERVICE_UNAVAILABLE` o `GATEWAY_TIMEOUT` | comparar contra el código del catálogo |
@@ -243,7 +308,7 @@ La receta:
 | un 404, 405 o 415 de Quarkus REST respondido como 500 | su status, con el código del catálogo | nada |
 | un cuerpo sin `metadata` | `metadata.traceId` y `metadata.timestamp` | nada; es aditivo |
 | `ApiExceptionMapper` | reemplazado por los mappers del núcleo y los puertos | reemplazar un puerto con un bean propio, en vez de un mapper más específico |
-| `quarkus.index-dependency` para la extensión | innecesario | quitarlo |
+| `quarkus.index-dependency` para la extensión | innecesario, y con él el build falla: Quarkus indexa la extensión entera y encuentra a la vez los dos productores del contador y los mappers de las extensiones opcionales (`Ambiguous dependencies for type ...ErrorCounter`, `When '@ServerExceptionMapper' is used without a value...`) | quitar las dos líneas de `application.properties` |
 
 ## Stack tecnológico
 
@@ -267,7 +332,8 @@ La receta:
 Cada módulo prueba lo que es suyo:
 
 - **El runtime** tiene pruebas unitarias con JUnit puro: el núcleo (`ErrorResponder`), cómo lee cada
-  excepción, la fuente del `traceId`, el contador y la configuración del `ObjectMapper`.
+  excepción, la fuente del `traceId`, el contador, la configuración del `ObjectMapper` y cada regla del filtro del
+  sobre de éxito.
 - **El deployment** tiene una prueba de los pasos de build y pruebas con `QuarkusUnitTest`, que arman una
   aplicación Quarkus mínima con la extensión como única dependencia, sin `quarkus.index-dependency`, y
   comprueban por HTTP:
@@ -276,7 +342,13 @@ Cada módulo prueba lo que es suyo:
     falta y los headers de un 405;
   - las excepciones de JAX-RS, la validación y la seguridad, esta última con un mecanismo de autenticación
     Basic de verdad para ver el `WWW-Authenticate` de un 401;
-  - el reemplazo de los puertos con beans propios y el contador `nova.errors` con Micrometer.
+  - el reemplazo de los puertos con beans propios y el contador `nova.errors` con Micrometer;
+  - el **sobre de éxito**, con las mismas pruebas que `EnvelopeStatusTest`, `ErrorEnvelopeTest` y
+    `UnwrappedResponseTest` del starter de Spring Boot, y los cuerpos de éxito comparados byte a byte con los que
+    ese starter escribe sobre un Tomcat real;
+  - SmallRye Health, las métricas de Prometheus, OpenAPI y la Dev UI, que contestan con su propio formato, y un
+    filtro de JAX-RS que anota las rutas que ve para probar que ni siquiera pasan por la cadena de filtros; la Dev
+    UI solo existe en modo dev, así que esa prueba arranca la aplicación en ese modo, en el puerto 18080.
 
 El plugin `io.quarkus.extension` va aplicado al runtime: genera el descriptor de la extensión, la vincula
 con su deployment y le da a las pruebas de ese módulo el modelo de la aplicación. Sus tareas se declaran

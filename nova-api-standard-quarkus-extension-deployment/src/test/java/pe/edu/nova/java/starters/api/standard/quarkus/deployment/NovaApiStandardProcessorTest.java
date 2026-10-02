@@ -29,6 +29,7 @@ import pe.edu.nova.java.starters.api.standard.quarkus.error.NovaExceptionMappers
 import pe.edu.nova.java.starters.api.standard.quarkus.error.SecurityExceptionMappers;
 import pe.edu.nova.java.starters.api.standard.quarkus.error.ValidationExceptionMappers;
 import pe.edu.nova.java.starters.api.standard.quarkus.jackson.ApiObjectMapperCustomizer;
+import pe.edu.nova.java.starters.api.standard.quarkus.response.ApiResponseFilter;
 
 /** Lo que la extensión registra al construir: sin esto, un servicio no la descubre y una imagen nativa no responde. */
 class NovaApiStandardProcessorTest {
@@ -41,7 +42,7 @@ class NovaApiStandardProcessorTest {
     }
 
     @Test
-    void aServiceWithoutOptionalExtensionsGetsTheCoreAndTheEmptyCounter() {
+    void aServiceWithoutOptionalExtensionsGetsTheCoreTheSuccessFilterAndTheEmptyCounter() {
         var beans = processor.beans(capabilities(), Optional.empty());
 
         assertEquals(
@@ -49,6 +50,7 @@ class NovaApiStandardProcessorTest {
                         ApiObjectMapperCustomizer.class.getName(),
                         ErrorPortProducers.class.getName(),
                         ErrorResponder.class.getName(),
+                        ApiResponseFilter.class.getName(),
                         NovaExceptionMappers.class.getName(),
                         NoopErrorCounterProducer.class.getName()),
                 beans.getBeanClasses());
@@ -84,15 +86,25 @@ class NovaApiStandardProcessorTest {
     }
 
     @Test
-    void everyClassWithServerExceptionMapperIsIndexed() {
+    void theSuccessFilterDoesNotNeedAnyOptionalExtension() {
+        for (var capabilities : List.of(capabilities(), capabilities(Capability.HIBERNATE_VALIDATOR, Capability.SECURITY))) {
+            assertTrue(processor.beans(capabilities, Optional.empty())
+                    .getBeanClasses()
+                    .contains(ApiResponseFilter.class.getName()));
+        }
+    }
+
+    @Test
+    void everyClassWithServerExceptionMapperOrServerResponseFilterIsIndexed() {
         assertEquals(
-                Set.of(NovaExceptionMappers.class.getName()),
+                Set.of(NovaExceptionMappers.class.getName(), ApiResponseFilter.class.getName()),
                 processor.indexedClasses(capabilities()).getClassesToIndex());
         assertEquals(
                 Set.of(
                         NovaExceptionMappers.class.getName(),
                         ValidationExceptionMappers.class.getName(),
-                        SecurityExceptionMappers.class.getName()),
+                        SecurityExceptionMappers.class.getName(),
+                        ApiResponseFilter.class.getName()),
                 processor.indexedClasses(capabilities(Capability.HIBERNATE_VALIDATOR, Capability.SECURITY))
                         .getClassesToIndex());
     }
