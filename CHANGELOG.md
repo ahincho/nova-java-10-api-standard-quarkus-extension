@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.0.0](https://github.com/ahincho/nova-java-10-api-standard-quarkus-extension/compare/v2.0.1...v3.0.0) (2026-10-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* a resource that returned a plain object now answers the success envelope, with the object in data and the status in status. A resource that returned an ApiResponse by hand is unchanged. The README has the rows under Migrating to 3.0.0.
+* a service gets other statuses and codes on error. IllegalArgumentException and SecurityException are now a 500 PlatformError, every 5xx carries the code of its status, the messages are the ones of the catalog, in Spanish, and ApiExceptionMapper is replaced by the core mappers and the ports. The README has the recipe under Migrating to 3.0.0.
+
+### Features
+
+* answer errors by layer as ADR-031 decides ([45d2273](https://github.com/ahincho/nova-java-10-api-standard-quarkus-extension/commit/45d2273806765b0ef22f5d6b775b882a7bad631f))
+* wrap successful responses in the Nova envelope ([e0f4862](https://github.com/ahincho/nova-java-10-api-standard-quarkus-extension/commit/e0f4862fbdae73eab1f3d5aaed942ee4d6ca57dd))
+
 ## [2.0.1](https://github.com/ahincho/nova-java-10-api-standard-quarkus-extension/compare/v1.0.1...v2.0.1) (2026-09-27)
 
 
