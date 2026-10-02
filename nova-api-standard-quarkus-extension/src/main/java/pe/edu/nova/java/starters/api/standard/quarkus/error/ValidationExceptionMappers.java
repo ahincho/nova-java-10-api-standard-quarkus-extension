@@ -108,7 +108,9 @@ public class ValidationExceptionMappers {
      */
     private static boolean isClassLevel(ConstraintViolation<?> violation, Path.Node last) {
         return last.getKind() == ElementKind.BEAN
-                || (last.getKind() == ElementKind.PARAMETER && violation.getLeafBean() == violation.getInvalidValue());
+                || (last.getKind() == ElementKind.PARAMETER
+                        && violation.getLeafBean() != null
+                        && violation.getLeafBean() == violation.getInvalidValue());
     }
 
     private static String messageOf(ConstraintViolation<?> violation) {

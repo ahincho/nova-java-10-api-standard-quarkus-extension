@@ -50,7 +50,8 @@ public class ErrorResponder {
     private static final Logger LOG = Logger.getLogger(ErrorResponder.class);
 
     /** Headers que describen el cuerpo de la excepción original y no el del sobre que se escribe en su lugar. */
-    private static final Set<String> ENTITY_HEADERS = Set.of("content-type", "content-length", "transfer-encoding");
+    private static final Set<String> ENTITY_HEADERS =
+            Set.of("content-type", "content-length", "content-encoding", "transfer-encoding");
 
     private final ErrorPorts ports;
     private final ErrorCounter counter;

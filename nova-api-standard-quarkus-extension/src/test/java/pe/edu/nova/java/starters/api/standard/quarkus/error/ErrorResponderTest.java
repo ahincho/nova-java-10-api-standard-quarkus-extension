@@ -142,6 +142,7 @@ class ErrorResponderTest {
         headers.add("Allow", "GET, POST");
         headers.add("Content-Type", "text/plain");
         headers.add("Content-Length", "11");
+        headers.add("Content-Encoding", "gzip");
 
         Response response = responder.respondFramework(405, null, List.of(), headers, new RuntimeException());
 
@@ -149,6 +150,7 @@ class ErrorResponderTest {
         assertEquals("GET, POST", response.getHeaderString("Allow"));
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getMediaType());
         assertNull(response.getHeaderString("Content-Length"));
+        assertNull(response.getHeaderString("Content-Encoding"));
     }
 
     @Test
